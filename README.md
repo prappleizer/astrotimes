@@ -1,5 +1,8 @@
 # astrotimes
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7877007.svg)](https://doi.org/10.5281/zenodo.7877007)
+
+
 Quick CLI tool for quickly (in terminal) printing today's sunset, 12 degree, and 18 degree twilight times, along with moonrise and moonset (if during the night), for a given observatory, presented in any time zone.
 
 Also: Script which will, for some observatory, tell you how many hours and minutes are left until the next (sunset, twilight, etc). 
@@ -80,3 +83,10 @@ This will give you a readout similar to the above, but with how long remains unt
 In both cases, the moon is handled as follows: Only the range of -12 hours to the calculated sunrise is queried; if the moon is already up at the start of night, or is still up at the end of night, the moonrise/moonset times will simply display the sunset or sunrise time. 
 
 
+## Attribution 
+
+This project makes use of the `astropy` package. If you find it useful in observations or planning, consider citing both `astropy` and `astrotimes`. 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7877007.svg)](https://doi.org/10.5281/zenodo.7877007)
+```
+Pasha, Imad. (2023). Astrotimes: Terminal CLI tool for astronomical timings at various observatories (v0.0.1). Zenodo. [https://doi.org/10.5281/zenodo.7877007](https://doi.org/10.5281/zenodo.7877007)
+```
