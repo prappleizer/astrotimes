@@ -75,6 +75,6 @@ astrotimes_until -o keck
 
 This will give you a readout similar to the above, but with how long remains until the next set of sunsets, twilights, etc. 
 
-In both cases, the moon is handled as follows: Only the range of sunset to sunrise is queried; if the moon is already up at the start of night, or is still up at the end of night, the moonrise/moonset times will simply say "UP @ start of night" (or end of night). If the moon rises or sets during the night window, the relevant time will appear. 
+In both cases, the moon is handled as follows: Only the range of -12 hours to the calculated sunrise is queried; if the moon is already up at the start of night, or is still up at the end of night, the moonrise/moonset times will simply display the sunset or sunrise time. 
 
 
