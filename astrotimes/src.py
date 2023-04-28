@@ -38,7 +38,18 @@ def get_midnight(datetime_obj,days=1):
 
 
 
-def astrotimes(observatory,tz_print='observatory',date='today'):
+def astrotimes(observatory:str,tz_print:str='observatory',date:str='today'):
+    """Return the astronomical times for an observatory
+
+    Parameters
+    ----------
+    observatory : str
+        name of observatory to compute for. Str will attempt lookup in astopy obs table or local sites.json. Add custom observatories to this file.
+    tz_print : str, optional
+        timezone for which to print the tims; by default will be the observatory timezone. Standard timezone names supported, by default 'observatory'
+    date : str, optional
+        date to show times for, defaulting to the nearest midnight. Format: YYYY-MM-DD, by default 'today'
+    """
     date_utc = datetime.utcnow()
     if date == 'today':
         date_local = datetime.today()
@@ -60,10 +71,6 @@ def astrotimes(observatory,tz_print='observatory',date='today'):
     else:
         midnight_date_str = date
 
-
-    
-    
-    
     if isinstance(observatory,str):
         try:
             obsloc = EarthLocation.of_site(observatory)
@@ -159,7 +166,14 @@ def astrotimes(observatory,tz_print='observatory',date='today'):
 
 
 
-def time_until(observatory):
+def time_until(observatory:str):
+    """Generate the time until astronomical times (next sunset, next sunrise, etc.) at observatory.
+
+    Parameters
+    ----------
+    observatory : str
+        name of observatory in astropy lookup table or sites.json
+    """
     
     if isinstance(observatory,str):
         try:
@@ -229,12 +243,25 @@ def time_until(observatory):
 
 
 class Night():
-    def __init__(self,midnight,obsloc):
+    """Class for handling nightly calculations
+    """
+    def __init__(self,midnight:Time,obsloc:EarthLocation):
+        """Initialize Night class with a particular midnight and osbervatory location
+
+        Parameters
+        ----------
+        midnight : astropy.time.Time
+            midnight time to use
+        obsloc : EarthLocation
+            locstion of the observatory
+        """
         self.midnight=midnight
         self.obsloc=obsloc 
         self.calc_quantities() 
     
     def calc_quantities(self):
+        """Computes the different times
+        """
         self.time_to_sunset,_= self.sunset_wrapper(self.midnight,0.0)
         self.time_to_sunset_12deg,_= self.sunset_wrapper(self.midnight,-12.0)
         self.time_to_sunset_18deg,_ = self.sunset_wrapper(self.midnight,-18.0)
@@ -274,17 +301,6 @@ class Night():
             ind = 0 
         elif which == 'sunrises':
             ind = -1
-        # delta_midnight_init = np.linspace(-12, 12, 24)*u.hour
-        # obs_times = midnight+delta_midnight_init
-        # frame1 = AltAz(obstime=obs_times,location=self.obsloc)
-        # sun = get_sun(obs_times).transform_to(frame1)
-        # coarse_time = obs_times[np.where( sun.alt.to(u.deg) < angle*u.deg)[0][ind]] 
-        # delta_times_2 = np.linspace(-1,1,120)*u.minute
-        # obs_times_2 = coarse_time + delta_times_2 
-        # frame2 = AltAz(obstime=obs_times_2,location=self.obsloc)
-        # sun2 = get_sun(obs_times_2).transform_to(frame2)
-        # time = obs_times_2[np.where( sun2.alt.to(u.deg) < angle*u.deg)[0][ind]] 
-        # time_until = (time - Time.now()).to_datetime() 
         delta_midnight = np.linspace(-12,12,800)*u.hour
         obs_times = midnight+delta_midnight
         frame = AltAz(obstime=obs_times,location=self.obsloc)
