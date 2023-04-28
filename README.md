@@ -41,6 +41,8 @@ where `keck` is the observatory of interest. The following also works:
 ```
 astrotimes --observatory keck
 ```
+The output will look a little something like this: 
+![image of astrotime output](img/astrotimes.png)
 
 A list of supported observatories is [here](https://github.com/astropy/astropy-data/blob/gh-pages/coordinates/sites.json); names are case insensitive for that.
 
@@ -72,7 +74,7 @@ The other way the tool works is to tell you how many hours and minutes until the
 ```
 astrotimes_until -o keck
 ```
-
+![image of astrotime until output](img/astrotimes_until.png)
 This will give you a readout similar to the above, but with how long remains until the next set of sunsets, twilights, etc. 
 
 In both cases, the moon is handled as follows: Only the range of -12 hours to the calculated sunrise is queried; if the moon is already up at the start of night, or is still up at the end of night, the moonrise/moonset times will simply display the sunset or sunrise time. 
