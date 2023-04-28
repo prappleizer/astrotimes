@@ -198,7 +198,7 @@ def time_until(observatory:str):
             tz = site['timezone']
             obsloc = EarthLocation.from_geodetic(lon, lat, elevation)
             utcoffset = datetime.now(zoneinfo.ZoneInfo(tz)).utcoffset().total_seconds()/60/60
-            print(utcoffset)
+
 
     elif not isinstance(observatory,EarthLocation):
         raise AssertionError('If a non string is provided, it must be an astropy EarthLocation')
