@@ -53,6 +53,18 @@ astrotimes -o palomar -t US/Eastern
 ```
 in which `-t` is short for `--tz_print`. All officially recognized timezones should work. 
 
+By default, the code determines which night to compute based on the midnight which is closest to your current time when the code is run. Most of the time, this should be what you want, but you can also supply arbitrary dates via the `-d` or `--date` argument, e.g., 
+
+```
+astrotimes -o keck -d 2023-04-26
+```
+or
+```
+astrotimes -o keck --date 2023-04-26
+```
+
+The code printout shows which evening->morning is being shown, so you can adjust accordingly to get yesterday, tomorrow, etc.
+
 ## Time Until
 
 The other way the tool works is to tell you how many hours and minutes until the next sunset, sunrise, etc. You can do this with the same format (but without the need to specify a current timezone):
@@ -63,4 +75,6 @@ astrotimes_until -o keck
 
 This will give you a readout similar to the above, but with how long remains until the next set of sunsets, twilights, etc. 
 
-In both cases, the moon is handled as follows: Only the range of sunset to sunrise is queried; if the moon is already up at the start of night, or is still up at the end of night, the moonrise/moonset times will simply say "UP". If the moon rises or sets during the night window, that time will appear. 
+In both cases, the moon is handled as follows: Only the range of sunset to sunrise is queried; if the moon is already up at the start of night, or is still up at the end of night, the moonrise/moonset times will simply say "UP @ start of night" (or end of night). If the moon rises or sets during the night window, the relevant time will appear. 
+
+
