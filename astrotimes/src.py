@@ -29,8 +29,11 @@ import importlib.resources
 
 def astrotimes(observatory,tz_print='observatory'):
 
-    date_local =datetime.today()
-    date = datetime.today() + timedelta(days=1)
+    date_local = datetime.today()
+    if datetime.today().hour < 7:
+        date = datetime.today()
+    else:
+        date = datetime.today() + timedelta(days=1)
     date_str1 = date_local.strftime('%Y-%m-%d')
     date_str2 = date.strftime('%Y-%m-%d')
     
@@ -132,7 +135,10 @@ def astrotimes(observatory,tz_print='observatory'):
 def time_until(observatory):
 
     date_local =datetime.today()
-    date = datetime.today() + timedelta(days=1)
+    if datetime.today().hour < 7:
+        date = datetime.today()
+    else:
+        date = datetime.today() + timedelta(days=1)
     date_str1 = date_local.strftime('%Y-%m-%d')
     date_str2 = date.strftime('%Y-%m-%d')
     
