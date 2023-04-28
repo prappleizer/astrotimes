@@ -22,20 +22,47 @@ import importlib.resources
 #    sites = json.load(f)
 
 
+def get_midnight(datetime_obj,days=1):
+    """Returns the rounded time of the next midnight from now according to the date.
+
+    Parameters
+    ----------
+    datetime_obj : datetime.datetime
+        datetime obj
+    """
+    delt = timedelta(hours=datetime_obj.hour, minutes=datetime_obj.minute,
+                        seconds=datetime_obj.second, microseconds=datetime_obj.microsecond)
+    midnight = datetime_obj - delt + timedelta(days=days)
+
+    return midnight
 
 
 
-
-
-def astrotimes(observatory,tz_print='observatory'):
-
-    date_local = datetime.today()
-    if datetime.today().hour < 7:
-        date = datetime.today()
+def astrotimes(observatory,tz_print='observatory',date='today'):
+    date_utc = datetime.utcnow()
+    if date == 'today':
+        date_local = datetime.today()
+    
+        delt = timedelta(hours=date_local.hour, minutes=date_local.minute,
+                            seconds=date_local.second, microseconds=date_local.microsecond)
+        time_to_prev_midnight = delt.total_seconds()
+        previous_midnight = date_local - delt 
+        next_midnight = previous_midnight + timedelta(days=1)
+        time_to_next_midnight = (next_midnight - date_local).total_seconds() 
+        if time_to_prev_midnight < time_to_next_midnight:
+            midnight_date_use = date_utc - timedelta(hours=date_utc.hour, minutes=date_utc.minute,
+                            seconds=date_utc.second, microseconds=date_utc.microsecond)
+        elif time_to_prev_midnight >= time_to_next_midnight:
+            midnight_date_use = date_utc - timedelta(hours=date_utc.hour, minutes=date_utc.minute,
+                            seconds=date_utc.second, microseconds=date_utc.microsecond) + timedelta(days=1)
+        
+        midnight_date_str = midnight_date_use.strftime('%Y-%m-%d')
     else:
-        date = datetime.today() + timedelta(days=1)
-    date_str1 = date_local.strftime('%Y-%m-%d')
-    date_str2 = date.strftime('%Y-%m-%d')
+        midnight_date_str = date
+
+
+    
+    
     
     if isinstance(observatory,str):
         try:
@@ -64,7 +91,7 @@ def astrotimes(observatory,tz_print='observatory'):
                 
     elif not isinstance(observatory,EarthLocation):
         raise AssertionError('If a non string is provided, it must be an astropy EarthLocation')
-    midnight = Time(f'{date_str2} 00:00:00') - utcoffset*u.hour
+    midnight = Time(f'{midnight_date_str} 00:00:00') - utcoffset*u.hour
 
     delta_midnight = np.linspace(-12, 12, 800)*u.hour
     obs_times = midnight+delta_midnight
@@ -78,15 +105,15 @@ def astrotimes(observatory,tz_print='observatory'):
     sunrise_18deg = obs_times[np.where( sun.alt.to(u.deg) < -18*u.deg)[0][-1]]
     sunrise_12deg = obs_times[np.where( sun.alt.to(u.deg) < -12*u.deg)[0][-1]]
     sunrise = obs_times[np.where( sun.alt.to(u.deg) < 0*u.deg)[0][-1]]
-    start_str = f'Local Sunset/Rise times at {observatory} for date {date_str1}'
+    start_str = f'Local Sunset/Rise times at {observatory} for date {midnight_date_str}'
     
     
     if tz_print == 'observatory':
         prutcoffset = utcoffset 
-        start_str = f'Local Sunset/Rise times at {observatory} for date {date_str1}'
+        start_str = f'Local Sunset/Rise times at {observatory} for date {midnight_date_str}'
     else:
         prutcoffset = datetime.now(zoneinfo.ZoneInfo(tz_print)).utcoffset().total_seconds()/60/60
-        start_str = f'Sunset/Rise times IN {tz_print} for {observatory} for date {date_str1}'
+        start_str = f'Sunset/Rise times IN {tz_print} for {observatory} for date {midnight_date_str}'
         
     sunset = sunset+prutcoffset*u.hr
     sundown_12deg = sundown_12deg+prutcoffset*u.hr
@@ -133,14 +160,6 @@ def astrotimes(observatory,tz_print='observatory'):
 
 
 def time_until(observatory):
-
-    date_local =datetime.today()
-    if datetime.today().hour < 7:
-        date = datetime.today()
-    else:
-        date = datetime.today() + timedelta(days=1)
-    date_str1 = date_local.strftime('%Y-%m-%d')
-    date_str2 = date.strftime('%Y-%m-%d')
     
     if isinstance(observatory,str):
         try:
@@ -165,56 +184,110 @@ def time_until(observatory):
             tz = site['timezone']
             obsloc = EarthLocation.from_geodetic(lon, lat, elevation)
             utcoffset = datetime.now(zoneinfo.ZoneInfo(tz)).utcoffset().total_seconds()/60/60
+            print(utcoffset)
 
     elif not isinstance(observatory,EarthLocation):
         raise AssertionError('If a non string is provided, it must be an astropy EarthLocation')
-    midnight = Time(f'{date_str2} 00:00:00') - utcoffset*u.hour
-    delta_midnight = np.linspace(-12, 12, 800)*u.hour
-    obs_times = midnight+delta_midnight
-    frame = AltAz(obstime=obs_times,location=obsloc)
     
-    sun = get_sun(obs_times).transform_to(frame)
+    current_time_at_obsloc = datetime.utcnow() + timedelta(hours=utcoffset)
+    next_midnight = Time(get_midnight(current_time_at_obsloc,days=1))  - utcoffset*u.hour
+    print(next_midnight)
+    night = Night(next_midnight,obsloc)
 
-    sunset = (obs_times[np.where( sun.alt.to(u.deg) < -0*u.deg)[0][0]] - Time.now()).to_datetime()
-    sundown_12deg = (obs_times[np.where( sun.alt.to(u.deg) < -12*u.deg)[0][0]] - Time.now()).to_datetime()
-    sundown_18deg = (obs_times[np.where( sun.alt.to(u.deg) < -18*u.deg)[0][0]] - Time.now()).to_datetime()
-    sunrise_18deg = (obs_times[np.where( sun.alt.to(u.deg) < -18*u.deg)[0][-1]] - Time.now()).to_datetime()
-    sunrise_12deg = (obs_times[np.where( sun.alt.to(u.deg) < -12*u.deg)[0][-1]] - Time.now()).to_datetime()
-    sunrise = (obs_times[np.where( sun.alt.to(u.deg) < 0*u.deg)[0][-1]] - Time.now()).to_datetime() 
+    
     print('\n')
     start_str = f'Time until next Astronomical time of Interest: {observatory} observatory.'
     print(start_str)
     print('-'*len(start_str))
-    print(f'Time until next Sunset:                  {sunset}')
-    print(f'Time until next 12 deg Twilight:         {sundown_12deg}')
-    print(f'Time until next 18 deg Twilight:         {sundown_18deg}')
+    print(f'Time until next Sunset:                  {night.time_to_sunset}')
+    print(f'Time until next 12 deg Twilight:         {night.time_to_sunset_12deg}')
+    print(f'Time until next 18 deg Twilight:         {night.time_to_sunset_18deg}')
     print('   ')
-    print(f'Time until next 18 deg Twilight:         {sunrise_18deg}')
-    print(f'Time until next 12 deg Twilight:         {sunrise_12deg}')
-    print(f'Time until next Sunrise:                 {sunrise}')
+    print(f'Time until next 18 deg Twilight:         {night.time_to_sunrise_18deg}')
+    print(f'Time until next 12 deg Twilight:         {night.time_to_sunrise_12deg}')
+    print(f'Time until next Sunrise:                 {night.time_to_sunrise}')
 
-    night_times = obs_times[sun.alt.to(u.deg) < -0*u.deg]
-    frame2 = AltAz(obstime=night_times,location=obsloc)
-    moon = get_moon(night_times).transform_to(frame2)
-    moonrise = (night_times[np.where( moon.alt.to(u.deg) > -0*u.deg)[0][0]] - Time.now()).to_datetime()
-    if moonrise <= sunset:
-        moonrise = 'UP @ start of night'
-    #if moonrise < sunset:
-    #    moonrise = sunset 
-    moonset= (night_times[np.where( moon.alt.to(u.deg) < -0*u.deg)[0][0]] - Time.now()).to_datetime()
-    if moonset>=sunrise:
-        moonset = 'UP @ end of night'
+    # night_times = obs_times[sun.alt.to(u.deg) < -0*u.deg]
+    # frame2 = AltAz(obstime=night_times,location=obsloc)
+    # moon = get_moon(night_times).transform_to(frame2)
+    # moonrise = (night_times[np.where( moon.alt.to(u.deg) > -0*u.deg)[0][0]] - Time.now()).to_datetime()
+    # if moonrise <= sunset:
+    #     moonrise = 'UP @ start of night'
+    # #if moonrise < sunset:
+    # #    moonrise = sunset 
+    # moonset= (night_times[np.where( moon.alt.to(u.deg) < -0*u.deg)[0][0]] - Time.now()).to_datetime()
+    # if moonset>=sunrise:
+    #     moonset = 'UP @ end of night'
 
-    #if moonset > sunrise:
-    #    moonset = sunrise 
+    # #if moonset > sunrise:
+    # #    moonset = sunrise 
 
-    print(' ')
-    if isinstance(moonrise,str):
-        print(f'Time until next Moonrise:                {moonrise}')
-    else:
-        print(f'Time until next Moonrise:                 {moonrise}')
-    if isinstance(moonset,str):
-        print(f'Time until next Moonset:                 {moonset}')
-    print(f'Time until next Moonset:                 {moonset}')
+    # print(' ')
+    # if isinstance(moonrise,str):
+    #     print(f'Time until next Moonrise:                {moonrise}')
+    # else:
+    #     print(f'Time until next Moonrise:                 {moonrise}')
+    # if isinstance(moonset,str):
+    #     print(f'Time until next Moonset:                 {moonset}')
+    # print(f'Time until next Moonset:                 {moonset}')
+
+
+
+
+class Night():
+    def __init__(self,midnight,obsloc):
+        self.midnight=midnight
+        self.obsloc=obsloc 
+        self.calc_quantities() 
+    
+    def calc_quantities(self):
+        # First, Sunsets. We are only ever going to need the next upcoming midnight or the next one after that. 
+        self.time_to_sunset = self.sunset_wrapper(self.midnight,0.0)
+        self.time_to_sunset_12deg = self.sunset_wrapper(self.midnight,-12.0)
+        self.time_to_sunset_18deg = self.sunset_wrapper(self.midnight,-18.0)
+        self.time_to_sunrise = self.sunrise_wrapper(self.midnight,0.0)
+        self.time_to_sunrise_18deg = self.sunrise_wrapper(self.midnight,-18.0)
+        self.time_to_sunrise_12deg = self.sunrise_wrapper(self.midnight,-12.0)
+        
+
+    def sunset_wrapper(self,midnight,angle,which='sunsets'):
+        time_until = self.calc_values(midnight,angle,which=which)
+        print(time_until)
+        if time_until< timedelta(hours=0):
+            next_midnight = midnight + 24*u.hour
+            time_until = self.calc_values(next_midnight,angle,which=which)
+        return time_until
+
+    def sunrise_wrapper(self,midnight,angle,which='sunrises'):
+        time_until = self.calc_values(midnight,angle,which=which)
+        if time_until> timedelta(hours=24,minutes=5): 
+            prev_midnight = midnight - 24*u.hour 
+            time_until = self.calc_values(prev_midnight,angle,which=which)
+        return time_until 
+
+    def calc_values(self,midnight,angle,which):
+        if which == 'sunsets':
+            ind = 0 
+        elif which == 'sunrises':
+            ind = -1
+        # delta_midnight_init = np.linspace(-12, 12, 24)*u.hour
+        # obs_times = midnight+delta_midnight_init
+        # frame1 = AltAz(obstime=obs_times,location=self.obsloc)
+        # sun = get_sun(obs_times).transform_to(frame1)
+        # coarse_time = obs_times[np.where( sun.alt.to(u.deg) < angle*u.deg)[0][ind]] 
+        # delta_times_2 = np.linspace(-1,1,120)*u.minute
+        # obs_times_2 = coarse_time + delta_times_2 
+        # frame2 = AltAz(obstime=obs_times_2,location=self.obsloc)
+        # sun2 = get_sun(obs_times_2).transform_to(frame2)
+        # time = obs_times_2[np.where( sun2.alt.to(u.deg) < angle*u.deg)[0][ind]] 
+        # time_until = (time - Time.now()).to_datetime() 
+        delta_midnight = np.linspace(-12,12,800)*u.hour
+        obs_times = midnight+delta_midnight
+        frame = AltAz(obstime=obs_times,location=self.obsloc)
+        sun = get_sun(obs_times).transform_to(frame)
+        time = obs_times[np.where( sun.alt.to(u.deg) < angle*u.deg)[0][ind]] 
+        print(time)
+        time_until = (time - Time.now()).to_datetime() 
+        return time_until
 
 
