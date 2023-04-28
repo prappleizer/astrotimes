@@ -191,7 +191,6 @@ def time_until(observatory):
     
     current_time_at_obsloc = datetime.utcnow() + timedelta(hours=utcoffset)
     next_midnight = Time(get_midnight(current_time_at_obsloc,days=1))  - utcoffset*u.hour
-    print(next_midnight)
     night = Night(next_midnight,obsloc)
 
     
@@ -222,14 +221,9 @@ def time_until(observatory):
     # #if moonset > sunrise:
     # #    moonset = sunrise 
 
-    # print(' ')
-    # if isinstance(moonrise,str):
-    #     print(f'Time until next Moonrise:                {moonrise}')
-    # else:
-    #     print(f'Time until next Moonrise:                 {moonrise}')
-    # if isinstance(moonset,str):
-    #     print(f'Time until next Moonset:                 {moonset}')
-    # print(f'Time until next Moonset:                 {moonset}')
+    print(' ')
+    print(f'Time until next Moonrise:                {night.time_until_moonrise}')
+    print(f'Time until next Moonset:                 {night.time_until_moonset}')
 
 
 
@@ -241,31 +235,41 @@ class Night():
         self.calc_quantities() 
     
     def calc_quantities(self):
-        # First, Sunsets. We are only ever going to need the next upcoming midnight or the next one after that. 
-        self.time_to_sunset = self.sunset_wrapper(self.midnight,0.0)
-        self.time_to_sunset_12deg = self.sunset_wrapper(self.midnight,-12.0)
-        self.time_to_sunset_18deg = self.sunset_wrapper(self.midnight,-18.0)
-        self.time_to_sunrise = self.sunrise_wrapper(self.midnight,0.0)
-        self.time_to_sunrise_18deg = self.sunrise_wrapper(self.midnight,-18.0)
-        self.time_to_sunrise_12deg = self.sunrise_wrapper(self.midnight,-12.0)
-        
+        self.time_to_sunset,_= self.sunset_wrapper(self.midnight,0.0)
+        self.time_to_sunset_12deg,_= self.sunset_wrapper(self.midnight,-12.0)
+        self.time_to_sunset_18deg,_ = self.sunset_wrapper(self.midnight,-18.0)
+        self.time_to_sunrise,sunrise_time = self.sunrise_wrapper(self.midnight,0.0)
+        self.time_to_sunrise_18deg,_= self.sunrise_wrapper(self.midnight,-18.0)
+        self.time_to_sunrise_12deg,_= self.sunrise_wrapper(self.midnight,-12.0)
+        # Moon handling. 
+
+        moon_obs_times = np.linspace(sunrise_time-12*u.hour,sunrise_time,600)
+        moon_frame = AltAz(obstime=moon_obs_times,location=self.obsloc)
+        moon = get_moon(moon_obs_times).transform_to(moon_frame)
+        moon_rise = moon_obs_times[np.where(moon.alt.to(u.deg) > 0*u.deg)[0][0]] 
+        self.time_until_moonrise = (moon_rise - Time.now()).to_datetime() 
+        if self.time_until_moonrise < self.time_to_sunset:
+            self.time_until_moonrise = self.time_to_sunset 
+        moon_set = moon_obs_times[np.where(moon.alt.to(u.deg) > 0*u.deg)[0][-1]] 
+        self.time_until_moonset = (moon_set - Time.now()).to_datetime() 
+        if self.time_until_moonset > self.time_to_sunrise:
+            self.time_until_moonset = self.time_to_sunrise
 
     def sunset_wrapper(self,midnight,angle,which='sunsets'):
-        time_until = self.calc_values(midnight,angle,which=which)
-        print(time_until)
+        time_until,time = self.calc_values(midnight,angle,which=which)
         if time_until< timedelta(hours=0):
             next_midnight = midnight + 24*u.hour
-            time_until = self.calc_values(next_midnight,angle,which=which)
-        return time_until
+            time_until,time = self.calc_values(next_midnight,angle,which=which)
+        return time_until,time
 
     def sunrise_wrapper(self,midnight,angle,which='sunrises'):
-        time_until = self.calc_values(midnight,angle,which=which)
+        time_until,time = self.calc_values(midnight,angle,which=which)
         if time_until> timedelta(hours=24,minutes=5): 
             prev_midnight = midnight - 24*u.hour 
-            time_until = self.calc_values(prev_midnight,angle,which=which)
-        return time_until 
+            time_until,time = self.calc_values(prev_midnight,angle,which=which)
+        return time_until,time 
 
-    def calc_values(self,midnight,angle,which):
+    def calc_values(self,midnight,angle,which,):
         if which == 'sunsets':
             ind = 0 
         elif which == 'sunrises':
@@ -286,8 +290,7 @@ class Night():
         frame = AltAz(obstime=obs_times,location=self.obsloc)
         sun = get_sun(obs_times).transform_to(frame)
         time = obs_times[np.where( sun.alt.to(u.deg) < angle*u.deg)[0][ind]] 
-        print(time)
         time_until = (time - Time.now()).to_datetime() 
-        return time_until
+        return time_until,time
 
 
