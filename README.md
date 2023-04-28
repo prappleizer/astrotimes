@@ -87,6 +87,7 @@ In both cases, the moon is handled as follows: Only the range of -12 hours to th
 
 This project makes use of the `astropy` package. If you find it useful in observations or planning, consider citing both `astropy` and `astrotimes`. 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7877007.svg)](https://doi.org/10.5281/zenodo.7877007)
-```
-Pasha, Imad. (2023). Astrotimes: Terminal CLI tool for astronomical timings at various observatories (v0.0.1). Zenodo. [https://doi.org/10.5281/zenodo.7877007](https://doi.org/10.5281/zenodo.7877007)
-```
+
+
+> Pasha, Imad. (2023). Astrotimes: Terminal CLI tool for astronomical timings at various observatories (v0.0.1). Zenodo. [https://doi.org/10.5281/zenodo.7877007](https://doi.org/10.5281/zenodo.7877007)
+
